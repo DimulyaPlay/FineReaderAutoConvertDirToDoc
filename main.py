@@ -79,6 +79,6 @@ while True:
                 sleep(2)
             else:
                 print('пропущена папка: ', new_file)
-        current_files = new_current_files
+        current_files = new_files
         print('Ожидание новых файлов')
     sleep(delay)
