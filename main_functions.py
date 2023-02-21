@@ -29,7 +29,13 @@ class main_agregator:
             'input_folder': r'C:\scan',
             'export_wordimages_folder': r'C:\scan\word',
             'export_wordtext_folder': r'C:\scan\word',
-            'delay': 1
+            'delay': 1,
+            'toText': True,
+            'toImg': False,
+            'toTextUsePrefix': False,
+            'toImgUsePrefix': False,
+            'toTextPrefix': '2txt',
+            'toImgPrefix': '2img'
         }
         if os.path.exists(self.config_path):
             try:
@@ -50,6 +56,12 @@ class main_agregator:
         self.output_path_text = self.cfg['export_wordtext_folder']
         self.output_path_img = self.cfg['export_wordimages_folder']
         self.delay = self.cfg['delay']
+        self.toText = self.cfg['toText']
+        self.toImg = self.cfg['toImg']
+        self.toTextUsePrefix = self.cfg['toTextUsePrefix']
+        self.toImgUsePrefix = self.cfg['toImgUsePrefix']
+        self.toTextPrefix = self.cfg['toTextPrefix']
+        self.toImgPrefix = self.cfg['toImgPrefix']
 
     def write_config_to_file(self):
         with open(self.config_path, 'w') as configfile:
@@ -74,7 +86,6 @@ class main_agregator:
             temp_images.append(outpath)
             os.close(fd)
             page = pdfdoc.load_page(i)
-            print(page.rect.width, page.rect.height)
             pix = page.get_pixmap(matrix=mat)
             pix.save(outpath)
             if page.rect.width > page.rect.height:

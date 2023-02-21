@@ -51,18 +51,48 @@ class Worker(QThread):
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow, agregator):
         self.mw = MainWindow
-        MainWindow.setFixedSize(332, 480)
+        MainWindow.setFixedSize(330, 480)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         font = QtGui.QFont()
         font.setPointSize(10)
+        self.tabWidget = QtWidgets.QTabWidget(self.mw)
+        self.tabWidget.setGeometry(QtCore.QRect(5, 5, 320, 230))
+        self.textTab = QtWidgets.QWidget()
+        self.tabWidget.addTab(self.textTab,"В текст")
+        self.imgTab = QtWidgets.QWidget()
+        self.checkBox_to_text = QtWidgets.QCheckBox(self.textTab)
+        self.checkBox_to_text.setGeometry(QtCore.QRect(10, 5, 221, 20))
+        self.checkBox_to_text.setFont(font)
+        self.checkBox_to_text.setChecked(agregator.toText)
+        self.label_import_txt = QtWidgets.QLabel(self.textTab)
+        self.label_import_txt.setGeometry(QtCore.QRect(10, 25, 211, 20))
+        self.label_import_txt.setFont(font)
+        self.lineEdit_import_path_text = QtWidgets.QLineEdit(self.textTab)
+        self.lineEdit_import_path_text.setGeometry(QtCore.QRect(10, 45, 275, 20))
+        self.lineEdit_import_path_text.setText(agregator.input_path)
+        self.toolButton_choose_import_path_text = QtWidgets.QToolButton(self.textTab)
+        self.toolButton_choose_import_path_text.setGeometry(QtCore.QRect(290, 45, 20, 20))
+        self.toolButton_choose_import_path_text.clicked.connect(lambda: self.openFolderNameDialog(self.lineEdit_import_path_text))
+        self.label_export_text = QtWidgets.QLabel(self.textTab)
+        self.label_export_text.setGeometry(QtCore.QRect(10, 70, 280, 20))
+        self.label_export_text.setFont(font)
+        self.lineEdit_export_text_path = QtWidgets.QLineEdit(self.textTab)
+        self.lineEdit_export_text_path.setGeometry(QtCore.QRect(10, 90, 275, 20))
+        self.lineEdit_export_text_path.setText(agregator.output_path_text)
+        self.toolButton_choose_export_text_path = QtWidgets.QToolButton(self.textTab)
+        self.toolButton_choose_export_text_path.setGeometry(QtCore.QRect(290, 90, 20, 20))
+        self.toolButton_choose_export_text_path.clicked.connect(lambda: self.openFolderNameDialog(self.lineEdit_export_text_path))
+        self.checkBox_to_text_use_prefix = QtWidgets.QCheckBox(self.textTab)
+        self.checkBox_to_text_use_prefix.setGeometry(QtCore.QRect(10, 120, 221, 20))
+        self.checkBox_to_text_use_prefix.setFont(font)
+        self.checkBox_to_text_use_prefix.setChecked(agregator.toTextUsePrefix)
+        self.lineEdit_text_prefix = QtWidgets.QLineEdit(self.textTab)
+        self.lineEdit_text_prefix.setGeometry(QtCore.QRect(10, 140, 275, 20))
+        self.lineEdit_text_prefix.setText(agregator.toTextPrefix)
 
+        self.tabWidget.addTab(self.imgTab, 'В изображения')
         # LINES AND LABELS
-        self.label = QtWidgets.QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(10, 10, 211, 21))
-        self.label.setFont(font)
-        self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(10, 80, 281, 21))
-        self.label_2.setFont(font)
+
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
         self.label_3.setGeometry(QtCore.QRect(10, 240, 211, 21))
         self.label_3.setFont(font)
@@ -72,38 +102,10 @@ class Ui_MainWindow(object):
         self.label_5 = QtWidgets.QLabel(self.centralwidget)
         self.label_5.setGeometry(QtCore.QRect(10, 120, 281, 21))
         self.label_5.setFont(font)
-        self.line = QtWidgets.QFrame(self.centralwidget)
-        self.line.setGeometry(QtCore.QRect(10, 50, 311, 16))
-        self.line.setFrameShape(QtWidgets.QFrame.HLine)
-        self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.line_2 = QtWidgets.QFrame(self.centralwidget)
-        self.line_2.setGeometry(QtCore.QRect(10, 160, 311, 16))
-        self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
-        self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.line_3 = QtWidgets.QFrame(self.centralwidget)
-        self.line_3.setGeometry(QtCore.QRect(10, 230, 311, 16))
-        self.line_3.setFrameShape(QtWidgets.QFrame.HLine)
-        self.line_3.setFrameShadow(QtWidgets.QFrame.Sunken)
 
         # FOLDER FOR SCAN
-        self.lineEdit_import_path = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_import_path.setGeometry(QtCore.QRect(10, 30, 281, 20))
-        self.lineEdit_import_path.setText(agregator.input_path)
-        self.toolButton_choose_import_path = QtWidgets.QToolButton(self.centralwidget)
-        self.toolButton_choose_import_path.setGeometry(QtCore.QRect(300, 30, 20, 20))
-        self.toolButton_choose_import_path.clicked.connect(lambda: self.openFolderNameDialog(self.lineEdit_import_path))
 
         # FOLDER FOR FINEREADER OUTPUT
-        self.checkBox_to_FineReader = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox_to_FineReader.setGeometry(QtCore.QRect(10, 60, 221, 21))
-        self.checkBox_to_FineReader.setFont(font)
-        self.checkBox_to_FineReader.setChecked(True)
-        self.lineEdit_export_finereader_path = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_export_finereader_path.setGeometry(QtCore.QRect(10, 100, 281, 20))
-        self.lineEdit_export_finereader_path.setText(agregator.output_path_text)
-        self.toolButton_choose_export_finereader_path = QtWidgets.QToolButton(self.centralwidget)
-        self.toolButton_choose_export_finereader_path.setGeometry(QtCore.QRect(300, 100, 20, 20))
-        self.toolButton_choose_export_finereader_path.clicked.connect(lambda: self.openFolderNameDialog(self.lineEdit_export_finereader_path))
 
         # FILECMD PATH
         self.lineEdit_finecmd_path = QtWidgets.QLineEdit(self.centralwidget)
@@ -147,7 +149,7 @@ class Ui_MainWindow(object):
         self.pushButton_scan_once.clicked.connect(lambda: self.apply_settings())
 
         self.plainTextEdit_logger = QtWidgets.QPlainTextEdit(self.centralwidget)
-        self.plainTextEdit_logger.setGeometry(QtCore.QRect(10, 310, 311, 148))
+        self.plainTextEdit_logger.setGeometry(QtCore.QRect(5, 310, 320, 148))
         self.plainTextEdit_logger.setReadOnly(True)
         self.plainTextEdit_logger.appendPlainText('Утилита для мониторинга папки и конвертации появляющихся в ней файлов через FineReader в текст, а также просто сохранения в виде изображений на страницах Word (для прикрепления сканов касс определений в базу)')
         self.plainTextEdit_logger.appendPlainText('Dmitry Sosnin, Krasnokamsky gs, github.com/dumulyaplay')
@@ -165,12 +167,13 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "PDFtoWORD"))
-        self.label.setText(_translate("MainWindow", "Введите путь для импорта сканов"))
-        self.label_2.setText(_translate("MainWindow", "Введите путь для экспорта в .doc (FineReader)"))
+        self.label_import_txt.setText(_translate("MainWindow", "Введите путь для импорта сканов"))
+        self.label_export_text.setText(_translate("MainWindow", "Введите путь для экспорта в .doc (FineReader)"))
         self.label_3.setText(_translate("MainWindow", "Периодичность сканирования, сек:"))
-        self.toolButton_choose_import_path.setText(_translate("MainWindow", "..."))
-        self.toolButton_choose_export_finereader_path.setText(_translate("MainWindow", "..."))
-        self.checkBox_to_FineReader.setText(_translate("MainWindow", "Сохранять как текст (FineReader)"))
+        self.toolButton_choose_import_path_text.setText(_translate("MainWindow", "..."))
+        self.toolButton_choose_export_text_path.setText(_translate("MainWindow", "..."))
+        self.checkBox_to_text.setText(_translate("MainWindow", "Сохранять как текст (FineReader)"))
+        self.checkBox_to_text_use_prefix.setText(_translate("MainWindow", "Реагировать только на префикс"))
         self.checkBox_to_wordImages.setText(_translate("MainWindow", "Сохранять как изображения (Префикс toimg-)"))
         self.toolButton_choose_export_wordimg_path.setText(_translate("MainWindow", "..."))
         self.label_4.setText(_translate("MainWindow", "Введите путь для экспорта в .docx"))
@@ -195,7 +198,7 @@ class Ui_MainWindow(object):
         self.pushButton_start.setDisabled(True)
         self.apply_settings()
         self.thread = QThread()
-        self.worker = Worker(agregator, self.checkBox_to_FineReader.isChecked(), self.checkBox_to_wordImages.isChecked())
+        self.worker = Worker(agregator, self.checkBox_to_text.isChecked(), self.checkBox_to_wordImages.isChecked())
         self.worker.moveToThread(self.thread)
         self.worker.add_string_to_log.connect(self.addLogRow)
         self.thread.started.connect(self.worker.run)
@@ -216,10 +219,16 @@ class Ui_MainWindow(object):
 
     def apply_settings(self):
         agregator.cfg['finecmd_path'] = fr'{self.lineEdit_finecmd_path.text()}'
-        agregator.cfg['input_folder'] = fr'{self.lineEdit_import_path.text()}'
-        agregator.cfg['export_wordtext_folder'] = fr'{self.lineEdit_export_finereader_path.text()}'
+        agregator.cfg['input_folder'] = fr'{self.lineEdit_import_path_text.text()}'
+        agregator.cfg['export_wordtext_folder'] = fr'{self.lineEdit_export_text_path.text()}'
         agregator.cfg['export_wordimages_folder'] = fr'{self.lineEdit_wordimg_path.text()}'
         agregator.cfg['delay'] = self.spinBox_period.value()
+        # agregator.cfg['toText']
+        # agregator.cfg['toImg']
+        # agregator.cfg['toTextUsePrefix']
+        # agregator.cfg['toImgUsePrefix']
+        # agregator.cfg['toTextPrefix']
+        # agregator.cfg['toImgPrefix']
         agregator.write_config_to_file()
         agregator.read_create_config()
         self.addLogRow('Настройки были сохранены')
