@@ -7,42 +7,52 @@ import os
 
 
 class Worker(QThread):
-    def __init__(self, agregator, isText, isImage):
+    def __init__(self, agregator, workerType):
         super().__init__()
         self.tagregator = agregator
-        self.tistext = isText
-        self.tisimage = isImage
         self._Running = True
+        self.workerType = workerType
 
     add_string_to_log = pyqtSignal(str)
 
     def run(self):
-        current_files = os.listdir(self.tagregator.input_path)
-        self.add_string_to_log.emit(f'{ctime()} - Сканирование запущено')
+        if self.workerType == 'both':
+            input_path = self.tagregator.input_path_txt if self.tagregator.toText else self.tagregator.input_path_img
+        if self.workerType == 'img':
+            input_path = self.tagregator.input_path_img
+        if self.workerType == 'txt':
+            input_path = self.tagregator.input_path_txt
+        current_files = os.listdir(input_path)
+        self.add_string_to_log.emit(f'{ctime()} - Сканирование запущено: {self.workerType}' )
+
         while self._Running:
-            new_files = os.listdir(self.tagregator.input_path)
+            new_files = os.listdir(input_path)
             new_current_files = [i for i in new_files if i not in current_files and i != os.path.basename(
                 self.tagregator.output_path_text) and i != os.path.basename(self.tagregator.output_path_img)]
             if new_current_files:
-                self.add_string_to_log.emit(f'{ctime()} - Обнаружены файлы')
                 for new_file in new_current_files:
-                    filepath_in = self.tagregator.input_path + r'\\' + new_file
+                    prefixImg = True if new_file.startswith(self.tagregator.toImgPrefix) else False
+                    prefixTxt = True if new_file.startswith(self.tagregator.toTextPrefix) else False
+                    filepath_in = input_path + r'\\' + new_file
                     if os.path.isfile(filepath_in):
-                        if self.tistext:
-                            self.add_string_to_log.emit(f'{ctime()} - Начата процедура P2T для {filepath_in}')
-                            try:
-                                self.tagregator.save_to_doc_as_text(filepath_in)
-                            except Exception as e:
-                                pass
-                            self.add_string_to_log.emit(f'{ctime()} - Завершена процедура P2T для {filepath_in}')
-                        if self.tisimage:
-                            self.add_string_to_log.emit(f'{ctime()} - Начата процедура P2I для {filepath_in}')
-                            try:
-                                self.tagregator.save_to_docx_as_img(filepath_in)
+                        if self.tagregator.toText and (self.workerType == 'both' or self.workerType == 'txt'):
+                            if (self.tagregator.toTextUsePrefix and prefixTxt) or not self.tagregator.toTextUsePrefix:
+                                self.add_string_to_log.emit(f'{ctime()} - Начата процедура P2T для {filepath_in}')
+                                try:
+                                    self.tagregator.save_to_doc_as_text(fr'{filepath_in}')
+                                except Exception as e:
+                                    pass
+                                self.add_string_to_log.emit(f'{ctime()} - Завершена процедура P2T для {filepath_in}')
+                        if self.tagregator.toImg and (self.workerType == 'both' or self.workerType == 'img'):
+                            if (self.tagregator.toImgUsePrefix and prefixImg) or not self.tagregator.toImgUsePrefix:
+                                self.add_string_to_log.emit(f'{self.tagregator.toImgUsePrefix} {prefixImg} {prefixImg}')
+                                self.add_string_to_log.emit(f'{ctime()} - Начата процедура P2I для {filepath_in}')
+                                try:
+                                    self.tagregator.save_to_docx_as_img(filepath_in, self.tagregator.dpi)
 
-                            except Exception as e:
-                                pass
-                        self.add_string_to_log.emit(f'{ctime()} - Завершена процедура P2I для {filepath_in}')
+                                except Exception as e:
+                                    pass
+                                self.add_string_to_log.emit(f'{ctime()} - Завершена процедура P2I для {filepath_in}')
             current_files = new_files
             sleep(self.tagregator.delay)
         self.exit(0)
@@ -51,12 +61,12 @@ class Worker(QThread):
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow, agregator):
         self.mw = MainWindow
-        MainWindow.setFixedSize(330, 480)
+        MainWindow.setFixedSize(335, 480)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         font = QtGui.QFont()
         font.setPointSize(10)
         self.tabWidget = QtWidgets.QTabWidget(self.mw)
-        self.tabWidget.setGeometry(QtCore.QRect(5, 5, 320, 230))
+        self.tabWidget.setGeometry(QtCore.QRect(5, 5, 325, 235))
         self.textTab = QtWidgets.QWidget()
         self.tabWidget.addTab(self.textTab,"В текст")
         self.imgTab = QtWidgets.QWidget()
@@ -69,7 +79,7 @@ class Ui_MainWindow(object):
         self.label_import_txt.setFont(font)
         self.lineEdit_import_path_text = QtWidgets.QLineEdit(self.textTab)
         self.lineEdit_import_path_text.setGeometry(QtCore.QRect(10, 45, 275, 20))
-        self.lineEdit_import_path_text.setText(agregator.input_path)
+        self.lineEdit_import_path_text.setText(agregator.input_path_txt)
         self.toolButton_choose_import_path_text = QtWidgets.QToolButton(self.textTab)
         self.toolButton_choose_import_path_text.setGeometry(QtCore.QRect(290, 45, 20, 20))
         self.toolButton_choose_import_path_text.clicked.connect(lambda: self.openFolderNameDialog(self.lineEdit_import_path_text))
@@ -89,46 +99,64 @@ class Ui_MainWindow(object):
         self.lineEdit_text_prefix = QtWidgets.QLineEdit(self.textTab)
         self.lineEdit_text_prefix.setGeometry(QtCore.QRect(10, 140, 275, 20))
         self.lineEdit_text_prefix.setText(agregator.toTextPrefix)
-
-        self.tabWidget.addTab(self.imgTab, 'В изображения')
-        # LINES AND LABELS
-
-        self.label_3 = QtWidgets.QLabel(self.centralwidget)
-        self.label_3.setGeometry(QtCore.QRect(10, 240, 211, 21))
-        self.label_3.setFont(font)
-        self.label_4 = QtWidgets.QLabel(self.centralwidget)
-        self.label_4.setGeometry(QtCore.QRect(10, 190, 281, 21))
-        self.label_4.setFont(font)
-        self.label_5 = QtWidgets.QLabel(self.centralwidget)
-        self.label_5.setGeometry(QtCore.QRect(10, 120, 281, 21))
-        self.label_5.setFont(font)
-
-        # FOLDER FOR SCAN
-
-        # FOLDER FOR FINEREADER OUTPUT
-
-        # FILECMD PATH
-        self.lineEdit_finecmd_path = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_finecmd_path.setGeometry(QtCore.QRect(10, 140, 281, 20))
+        self.label_finecmd_path = QtWidgets.QLabel(self.textTab)
+        self.label_finecmd_path.setGeometry(QtCore.QRect(10, 165, 281, 21))
+        self.label_finecmd_path.setFont(font)
+        self.lineEdit_finecmd_path = QtWidgets.QLineEdit(self.textTab)
+        self.lineEdit_finecmd_path.setGeometry(QtCore.QRect(10, 185, 275, 20))
         self.lineEdit_finecmd_path.setText(agregator.finecmd_path)
-        self.toolButton_choose_finecmd_path = QtWidgets.QToolButton(self.centralwidget)
-        self.toolButton_choose_finecmd_path.setGeometry(QtCore.QRect(300, 140, 20, 20))
+        self.toolButton_choose_finecmd_path = QtWidgets.QToolButton(self.textTab)
+        self.toolButton_choose_finecmd_path.setGeometry(QtCore.QRect(290, 185, 20, 20))
         self.toolButton_choose_finecmd_path.clicked.connect(lambda: self.openFileNameDialog(self.lineEdit_finecmd_path))
 
-        # FOLDER FOR IMG OUTPUT
-        self.checkBox_to_wordImages = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox_to_wordImages.setGeometry(QtCore.QRect(10, 170, 301, 21))
+
+        self.tabWidget.addTab(self.imgTab, 'В изображения')
+        self.checkBox_to_wordImages = QtWidgets.QCheckBox(self.imgTab)
+        self.checkBox_to_wordImages.setGeometry(QtCore.QRect(10, 5, 241, 20))
         self.checkBox_to_wordImages.setFont(font)
-        self.lineEdit_wordimg_path = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_wordimg_path.setGeometry(QtCore.QRect(10, 210, 281, 20))
-        self.lineEdit_wordimg_path.setText(agregator.output_path_img)
-        self.toolButton_choose_export_wordimg_path = QtWidgets.QToolButton(self.centralwidget)
-        self.toolButton_choose_export_wordimg_path.setGeometry(QtCore.QRect(300, 210, 20, 20))
-        self.toolButton_choose_export_wordimg_path.clicked.connect(lambda: self.openFolderNameDialog(self.lineEdit_wordimg_path))
+        self.checkBox_to_wordImages.setChecked(agregator.toImg)
+        self.label_import_img = QtWidgets.QLabel(self.imgTab)
+        self.label_import_img.setGeometry(QtCore.QRect(10, 25, 211, 20))
+        self.label_import_img.setFont(font)
+        self.lineEdit_import_path_img = QtWidgets.QLineEdit(self.imgTab)
+        self.lineEdit_import_path_img.setGeometry(QtCore.QRect(10, 45, 275, 20))
+        self.lineEdit_import_path_img.setText(agregator.input_path_img)
+        self.toolButton_choose_import_path_img = QtWidgets.QToolButton(self.imgTab)
+        self.toolButton_choose_import_path_img.setGeometry(QtCore.QRect(290, 45, 20, 20))
+        self.toolButton_choose_import_path_img.clicked.connect(lambda: self.openFolderNameDialog(self.lineEdit_import_path_img))
+        self.label_export_img = QtWidgets.QLabel(self.imgTab)
+        self.label_export_img.setGeometry(QtCore.QRect(10, 70, 281, 21))
+        self.label_export_img.setFont(font)
+        self.lineEdit_export_img_path = QtWidgets.QLineEdit(self.imgTab)
+        self.lineEdit_export_img_path.setGeometry(QtCore.QRect(10, 90, 275, 20))
+        self.lineEdit_export_img_path.setText(agregator.output_path_img)
+        self.toolButton_choose_export_img_path = QtWidgets.QToolButton(self.imgTab)
+        self.toolButton_choose_export_img_path.setGeometry(QtCore.QRect(290, 90, 20, 20))
+        self.toolButton_choose_export_img_path.clicked.connect(
+            lambda: self.openFolderNameDialog(self.lineEdit_export_img_path))
+        self.checkBox_to_img_use_prefix = QtWidgets.QCheckBox(self.imgTab)
+        self.checkBox_to_img_use_prefix.setGeometry(QtCore.QRect(10, 120, 221, 20))
+        self.checkBox_to_img_use_prefix.setFont(font)
+        self.checkBox_to_img_use_prefix.setChecked(agregator.toImgUsePrefix)
+        self.lineEdit_img_prefix = QtWidgets.QLineEdit(self.imgTab)
+        self.lineEdit_img_prefix.setGeometry(QtCore.QRect(10, 140, 275, 20))
+        self.lineEdit_img_prefix.setText(agregator.toImgPrefix)
+        self.label_dpi = QtWidgets.QLabel(self.imgTab)
+        self.label_dpi.setGeometry(QtCore.QRect(10, 180, 281, 21))
+        self.label_dpi.setFont(font)
+        self.spinBox_dpi = QtWidgets.QSpinBox(self.imgTab)
+        self.spinBox_dpi.setGeometry(QtCore.QRect(215, 180, 101, 20))
+        self.spinBox_dpi.setMinimum(75)
+        self.spinBox_dpi.setMaximum(600)
+        self.spinBox_dpi.setSingleStep(75)
+        self.spinBox_dpi.setValue(agregator.dpi)
 
         # DELAY SPINBOX
+        self.label_delay = QtWidgets.QLabel(self.centralwidget)
+        self.label_delay.setGeometry(QtCore.QRect(10, 245, 211, 21))
+        self.label_delay.setFont(font)
         self.spinBox_period = QtWidgets.QSpinBox(self.centralwidget)
-        self.spinBox_period.setGeometry(QtCore.QRect(230, 240, 91, 20))
+        self.spinBox_period.setGeometry(QtCore.QRect(230, 245, 91, 20))
         self.spinBox_period.setMinimum(1)
         self.spinBox_period.setValue(agregator.delay)
 
@@ -143,10 +171,10 @@ class Ui_MainWindow(object):
         self.pushButton_stop.clicked.connect(lambda: self.stop_worker_scan())
         self.pushButton_stop.setDisabled(True)
 
-        self.pushButton_scan_once = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_scan_once.setGeometry(QtCore.QRect(180, 270, 141, 31))
-        self.pushButton_scan_once.setFont(font)
-        self.pushButton_scan_once.clicked.connect(lambda: self.apply_settings())
+        self.pushButton_save = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_save.setGeometry(QtCore.QRect(180, 270, 141, 31))
+        self.pushButton_save.setFont(font)
+        self.pushButton_save.clicked.connect(lambda: self.apply_settings())
 
         self.plainTextEdit_logger = QtWidgets.QPlainTextEdit(self.centralwidget)
         self.plainTextEdit_logger.setGeometry(QtCore.QRect(5, 310, 320, 148))
@@ -168,20 +196,24 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "PDFtoWORD"))
         self.label_import_txt.setText(_translate("MainWindow", "Введите путь для импорта сканов"))
+        self.label_import_img.setText(_translate("MainWindow", "Введите путь для импорта сканов"))
         self.label_export_text.setText(_translate("MainWindow", "Введите путь для экспорта в .doc (FineReader)"))
-        self.label_3.setText(_translate("MainWindow", "Периодичность сканирования, сек:"))
+        self.label_delay.setText(_translate("MainWindow", "Периодичность сканирования, сек:"))
         self.toolButton_choose_import_path_text.setText(_translate("MainWindow", "..."))
         self.toolButton_choose_export_text_path.setText(_translate("MainWindow", "..."))
+        self.toolButton_choose_import_path_img.setText(_translate("MainWindow", "..."))
+        self.toolButton_choose_export_img_path.setText(_translate("MainWindow", "..."))
         self.checkBox_to_text.setText(_translate("MainWindow", "Сохранять как текст (FineReader)"))
         self.checkBox_to_text_use_prefix.setText(_translate("MainWindow", "Реагировать только на префикс"))
-        self.checkBox_to_wordImages.setText(_translate("MainWindow", "Сохранять как изображения (Префикс toimg-)"))
-        self.toolButton_choose_export_wordimg_path.setText(_translate("MainWindow", "..."))
-        self.label_4.setText(_translate("MainWindow", "Введите путь для экспорта в .docx"))
+        self.checkBox_to_img_use_prefix.setText(_translate("MainWindow", "Реагировать только на префикс"))
+        self.checkBox_to_wordImages.setText(_translate("MainWindow", "Сохранять как изображения в word"))
+        self.label_export_img.setText(_translate("MainWindow", "Введите путь для экспорта в .docx"))
         self.toolButton_choose_finecmd_path.setText(_translate("MainWindow", "..."))
-        self.label_5.setText(_translate("MainWindow", "Введите путь к FineCmd.exe"))
+        self.label_finecmd_path.setText(_translate("MainWindow", "Введите путь к FineCmd.exe"))
+        self.label_dpi.setText(_translate("MainWindow", "DPI растеризации изображений:"))
         self.pushButton_start.setText(_translate("MainWindow", "Запустить"))
         self.pushButton_stop.setText(_translate("MainWindow", "Остановить"))
-        self.pushButton_scan_once.setText(_translate("MainWindow", "Сохранить параметры"))
+        self.pushButton_save.setText(_translate("MainWindow", "Сохранить параметры"))
 
     def openFileNameDialog(self, lineEdit):
         filepath = QtWidgets.QFileDialog.getOpenFileName(self.mw, 'Направь на путь абсолютный до FineCmd.exe')
@@ -196,42 +228,79 @@ class Ui_MainWindow(object):
     def start_worker_scan(self):
         self.pushButton_stop.setDisabled(False)
         self.pushButton_start.setDisabled(True)
-        self.apply_settings()
-        self.thread = QThread()
-        self.worker = Worker(agregator, self.checkBox_to_text.isChecked(), self.checkBox_to_wordImages.isChecked())
-        self.worker.moveToThread(self.thread)
-        self.worker.add_string_to_log.connect(self.addLogRow)
-        self.thread.started.connect(self.worker.run)
-        self.thread.start()
+        res = self.apply_settings()
+        if not res:
+            return
+        if agregator.same_input_paths:
+            self.thread = QThread()
+            self.worker = Worker(agregator, 'both')
+            self.worker.moveToThread(self.thread)
+            self.worker.add_string_to_log.connect(self.addLogRow)
+            self.thread.started.connect(self.worker.run)
+            self.thread.start()
+        else:
+            if agregator.toText:
+                self.thread1 = QThread()
+                self.worker1 = Worker(agregator, 'txt')
+                self.worker1.moveToThread(self.thread1)
+                self.worker1.add_string_to_log.connect(self.addLogRow)
+                self.thread1.started.connect(self.worker1.run)
+                self.thread1.start()
+            if agregator.toImg:
+                self.thread2 = QThread()
+                self.worker2 = Worker(agregator, 'img')
+                self.worker2.moveToThread(self.thread2)
+                self.worker2.add_string_to_log.connect(self.addLogRow)
+                self.thread2.started.connect(self.worker2.run)
+                self.thread2.start()
         self.statusBar.showMessage('Сканирование запущено')
 
     def addLogRow(self, string):
         self.plainTextEdit_logger.appendPlainText(string)
 
     def stop_worker_scan(self):
-        self.worker._Running = False
-        self.worker = None
-        self.thread.terminate()
+        try:
+            self.worker._Running = False
+            self.thread.terminate()
+        except:
+            pass
+        try:
+            self.worker1._Running = False
+            self.thread1.terminate()
+        except:
+            pass
+        try:
+            self.worker2._Running = False
+            self.thread2.terminate()
+        except:
+            pass
         self.addLogRow('Сканирование было остановлено пользователем.')
         self.statusBar.showMessage('Сканирование не запущено')
         self.pushButton_start.setDisabled(False)
         self.pushButton_stop.setDisabled(True)
 
     def apply_settings(self):
+        restricted_paths = {self.lineEdit_export_text_path.text(), self.lineEdit_export_img_path.text()}
+        if self.lineEdit_import_path_text.text() in restricted_paths or self.lineEdit_import_path_img.text() in restricted_paths:
+            self.addLogRow('Пути входов и выходов не могут совпадать, настройки не были сохранены.')
+            return False
         agregator.cfg['finecmd_path'] = fr'{self.lineEdit_finecmd_path.text()}'
-        agregator.cfg['input_folder'] = fr'{self.lineEdit_import_path_text.text()}'
+        agregator.cfg['input_folder_txt'] = fr'{self.lineEdit_import_path_text.text()}'
+        agregator.cfg['input_folder_img'] = fr'{self.lineEdit_import_path_img.text()}'
         agregator.cfg['export_wordtext_folder'] = fr'{self.lineEdit_export_text_path.text()}'
-        agregator.cfg['export_wordimages_folder'] = fr'{self.lineEdit_wordimg_path.text()}'
+        agregator.cfg['export_wordimages_folder'] = fr'{self.lineEdit_export_img_path.text()}'
         agregator.cfg['delay'] = self.spinBox_period.value()
-        # agregator.cfg['toText']
-        # agregator.cfg['toImg']
-        # agregator.cfg['toTextUsePrefix']
-        # agregator.cfg['toImgUsePrefix']
-        # agregator.cfg['toTextPrefix']
-        # agregator.cfg['toImgPrefix']
+        agregator.cfg['toText'] = self.checkBox_to_text.isChecked()
+        agregator.cfg['toImg'] = self.checkBox_to_wordImages.isChecked()
+        agregator.cfg['toTextUsePrefix'] = self.checkBox_to_text_use_prefix.isChecked()
+        agregator.cfg['toImgUsePrefix'] = self.checkBox_to_img_use_prefix.isChecked()
+        agregator.cfg['toTextPrefix'] = self.lineEdit_text_prefix.text()
+        agregator.cfg['toImgPrefix'] = self.lineEdit_img_prefix.text()
+        agregator.cfg['dpi'] = self.spinBox_dpi.value()
         agregator.write_config_to_file()
         agregator.read_create_config()
         self.addLogRow('Настройки были сохранены')
+        return True
 
 
 def my_exception_hook(exctype, value, traceback):

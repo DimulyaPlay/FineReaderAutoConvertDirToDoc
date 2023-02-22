@@ -26,7 +26,8 @@ class main_agregator:
     def read_create_config(self):
         default_configuration = {
             'finecmd_path': r'C:\Program Files (x86)\ABBYY FineReader 15\FineCmd.exe',
-            'input_folder': r'C:\scan',
+            'input_folder_txt': r'C:\scan',
+            'input_folder_img': r'C:\scan',
             'export_wordimages_folder': r'C:\scan\word',
             'export_wordtext_folder': r'C:\scan\word',
             'delay': 1,
@@ -35,7 +36,8 @@ class main_agregator:
             'toTextUsePrefix': False,
             'toImgUsePrefix': False,
             'toTextPrefix': '2txt',
-            'toImgPrefix': '2img'
+            'toImgPrefix': '2img',
+            'dpi': 75
         }
         if os.path.exists(self.config_path):
             try:
@@ -52,9 +54,12 @@ class main_agregator:
             with open(self.config_path, 'w') as configfile:
                 json.dump(self.cfg, configfile)
         self.finecmd_path = self.cfg['finecmd_path']
-        self.input_path = self.cfg['input_folder']
+        self.input_path_txt = self.cfg['input_folder_txt']
+        self.input_path_img = self.cfg['input_folder_img']
+        self.same_input_paths = self.input_path_img == self.input_path_txt
         self.output_path_text = self.cfg['export_wordtext_folder']
         self.output_path_img = self.cfg['export_wordimages_folder']
+        self.same_output_paths = self.output_path_text == self.output_path_img
         self.delay = self.cfg['delay']
         self.toText = self.cfg['toText']
         self.toImg = self.cfg['toImg']
@@ -62,12 +67,15 @@ class main_agregator:
         self.toImgUsePrefix = self.cfg['toImgUsePrefix']
         self.toTextPrefix = self.cfg['toTextPrefix']
         self.toImgPrefix = self.cfg['toImgPrefix']
+        self.dpi = self.cfg['dpi']
 
     def write_config_to_file(self):
         with open(self.config_path, 'w') as configfile:
             json.dump(self.cfg, configfile)
 
-    def save_to_docx_as_img(self, filepath):
+    def save_to_docx_as_img(self, filepath, dpi):
+        if not filepath.endswith('.pdf'):
+            return
         pdffile = fr"{filepath}"
         filename = os.path.basename(filepath)
         pdfdoc = fitz.open(pdffile)
@@ -86,7 +94,7 @@ class main_agregator:
             temp_images.append(outpath)
             os.close(fd)
             page = pdfdoc.load_page(i)
-            pix = page.get_pixmap(matrix=mat)
+            pix = page.get_pixmap(dpi=dpi)
             pix.save(outpath)
             if page.rect.width > page.rect.height:
                 docxdoc.add_picture(outpath, width=Cm(21))
@@ -98,7 +106,7 @@ class main_agregator:
 
     def save_to_doc_as_text(self, filepath):
         filepath_out = self.output_path_text + r'\\' + os.path.basename(filepath) + '_text.doc'
-        subprocess.call(self.finecmd_path + ' ' + filepath + ' /lang russian english /out ' + filepath_out + ' /quit')
+        subprocess.call(self.finecmd_path + ' "' + filepath + '" /lang russian english /out "' + filepath_out + '" /quit')
 
 
 def ctime():
