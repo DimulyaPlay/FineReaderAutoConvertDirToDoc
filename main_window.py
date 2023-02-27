@@ -40,19 +40,23 @@ class Worker(QThread):
                                 self.add_string_to_log.emit(f'{ctime()} - Начата процедура P2T для {filepath_in}')
                                 try:
                                     self.tagregator.save_to_doc_as_text(fr'{filepath_in}')
+                                    self.add_string_to_log.emit(
+                                        f'{ctime()} - Завершена процедура P2T для {filepath_in}')
                                 except Exception as e:
+                                    self.add_string_to_log.emit(
+                                        f'{ctime()} - Ошибка {e}')
                                     pass
-                                self.add_string_to_log.emit(f'{ctime()} - Завершена процедура P2T для {filepath_in}')
                         if self.tagregator.toImg and (self.workerType == 'both' or self.workerType == 'img'):
                             if (self.tagregator.toImgUsePrefix and prefixImg) or not self.tagregator.toImgUsePrefix:
                                 self.add_string_to_log.emit(f'{self.tagregator.toImgUsePrefix} {prefixImg} {prefixImg}')
                                 self.add_string_to_log.emit(f'{ctime()} - Начата процедура P2I для {filepath_in}')
                                 try:
                                     self.tagregator.save_to_docx_as_img(filepath_in, self.tagregator.dpi)
-
+                                    self.add_string_to_log.emit(f'{ctime()} - Завершена процедура P2I для {filepath_in}')
                                 except Exception as e:
+                                    self.add_string_to_log.emit(
+                                        f'{ctime()} - Ошибка {e}')
                                     pass
-                                self.add_string_to_log.emit(f'{ctime()} - Завершена процедура P2I для {filepath_in}')
             current_files = new_files
             sleep(self.tagregator.delay)
         self.exit(0)
@@ -62,6 +66,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow, agregator):
         self.mw = MainWindow
         MainWindow.setFixedSize(335, 480)
+        MainWindow.setWindowIcon(QtGui.QIcon(agregator.icon))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         font = QtGui.QFont()
         font.setPointSize(10)
@@ -109,7 +114,6 @@ class Ui_MainWindow(object):
         self.toolButton_choose_finecmd_path.setGeometry(QtCore.QRect(290, 185, 20, 20))
         self.toolButton_choose_finecmd_path.clicked.connect(lambda: self.openFileNameDialog(self.lineEdit_finecmd_path))
 
-
         self.tabWidget.addTab(self.imgTab, 'В изображения')
         self.checkBox_to_wordImages = QtWidgets.QCheckBox(self.imgTab)
         self.checkBox_to_wordImages.setGeometry(QtCore.QRect(10, 5, 241, 20))
@@ -150,7 +154,6 @@ class Ui_MainWindow(object):
         self.spinBox_dpi.setMaximum(600)
         self.spinBox_dpi.setSingleStep(75)
         self.spinBox_dpi.setValue(agregator.dpi)
-
         # DELAY SPINBOX
         self.label_delay = QtWidgets.QLabel(self.centralwidget)
         self.label_delay.setGeometry(QtCore.QRect(10, 245, 211, 21))
