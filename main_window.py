@@ -4,7 +4,9 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from threading import Thread
 from main_functions import *
 import os
+import traceback
 
+# pyinstaller --noconfirm --onefile --windowed --icon "C:/Users/CourtUser/Desktop/release/FineReaderAutoConvertDirToDoc/document-convert.png" --add-data "C:/Users/CourtUser/Desktop/release/FineReaderAutoConvertDirToDoc/document-convert.png;."  "C:/Users/CourtUser/Desktop/release/FineReaderAutoConvertDirToDoc/main_window.py"
 
 class Worker(QThread):
     def __init__(self, agregator, workerType):
@@ -26,6 +28,7 @@ class Worker(QThread):
         self.add_string_to_log.emit(f'{ctime()} - Сканирование запущено: {self.workerType}' )
 
         while self._Running:
+            work_counter = 1
             new_files = os.listdir(input_path)
             new_current_files = [i for i in new_files if i not in current_files and i != os.path.basename(
                 self.tagregator.output_path_text) and i != os.path.basename(self.tagregator.output_path_img)]
@@ -41,7 +44,8 @@ class Worker(QThread):
                                 try:
                                     self.tagregator.save_to_doc_as_text(fr'{filepath_in}')
                                     self.add_string_to_log.emit(
-                                        f'{ctime()} - Завершена процедура P2T для {filepath_in}')
+                                        f'№{work_counter}. {ctime()} - Завершена процедура P2T для {filepath_in}')
+                                    work_counter += 1
                                 except Exception as e:
                                     self.add_string_to_log.emit(
                                         f'{ctime()} - Ошибка {e}')
@@ -52,7 +56,8 @@ class Worker(QThread):
                                 self.add_string_to_log.emit(f'{ctime()} - Начата процедура P2I для {filepath_in}')
                                 try:
                                     self.tagregator.save_to_docx_as_img(filepath_in, self.tagregator.dpi)
-                                    self.add_string_to_log.emit(f'{ctime()} - Завершена процедура P2I для {filepath_in}')
+                                    self.add_string_to_log.emit(f'№{work_counter}. {ctime()} - Завершена процедура P2I для {filepath_in}')
+                                    work_counter += 1
                                 except Exception as e:
                                     self.add_string_to_log.emit(
                                         f'{ctime()} - Ошибка {e}')
@@ -67,6 +72,21 @@ class Ui_MainWindow(object):
         self.mw = MainWindow
         MainWindow.setFixedSize(335, 480)
         MainWindow.setWindowIcon(QtGui.QIcon(agregator.icon))
+        self.tray = QtWidgets.QSystemTrayIcon(MainWindow)
+        self.tray.setIcon(QtGui.QIcon(agregator.icon))
+        self.tray.setVisible(True)
+        show_action = QtWidgets.QAction("Показать", MainWindow)
+        quit_action = QtWidgets.QAction("Выйти", MainWindow)
+        hide_action = QtWidgets.QAction("Скрыть", MainWindow)
+        show_action.triggered.connect(MainWindow.show)
+        hide_action.triggered.connect(MainWindow.hide)
+        quit_action.triggered.connect(app.quit)
+        tray_menu = QtWidgets.QMenu()
+        tray_menu.addAction(show_action)
+        tray_menu.addAction(hide_action)
+        tray_menu.addAction(quit_action)
+        self.tray.setContextMenu(tray_menu)
+        self.mw.setWindowFlags(QtCore.Qt.Tool)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         font = QtGui.QFont()
         font.setPointSize(10)
@@ -183,7 +203,7 @@ class Ui_MainWindow(object):
         self.plainTextEdit_logger.setGeometry(QtCore.QRect(5, 310, 320, 148))
         self.plainTextEdit_logger.setReadOnly(True)
         self.plainTextEdit_logger.appendPlainText('Утилита для мониторинга папки и конвертации появляющихся в ней файлов через FineReader в текст, а также просто сохранения в виде изображений на страницах Word (для прикрепления сканов касс определений в базу)')
-        self.plainTextEdit_logger.appendPlainText('Dmitry Sosnin, Krasnokamsky gs, github.com/dumulyaplay')
+        self.plainTextEdit_logger.appendPlainText('Dmitry Sosnin, Krasnokamsky gs, github.com/dimulyaplay')
 
         self.statusBar = QtWidgets.QStatusBar(MainWindow)
         self.statusBar.setFont(font)
@@ -191,7 +211,6 @@ class Ui_MainWindow(object):
         self.statusBar.showMessage('Сканирование не запущено.')
         MainWindow.setCentralWidget(self.centralwidget)
         MainWindow.setStatusBar(self.statusBar)
-
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -306,22 +325,27 @@ class Ui_MainWindow(object):
         return True
 
 
-def my_exception_hook(exctype, value, traceback):
-    print(exctype, value, traceback)
-    sys._excepthook(exctype, value, traceback)
-    sys.exit(1)
-
-
-sys._excepthook = sys.excepthook
-sys.excepthook = my_exception_hook
-
-
 if __name__ == "__main__":
     import sys
-    agregator = main_agregator()
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow, agregator)
-    MainWindow.show()
+    try:
+        agregator = main_agregator()
+        app = QtWidgets.QApplication(sys.argv)
+        MainWindow = QtWidgets.QMainWindow()
+        ui = Ui_MainWindow()
+        ui.setupUi(MainWindow, agregator)
+        if '-start_scan' in sys.argv:
+            ui.start_worker_scan()
+            ui.tray.showMessage(
+                "PDF2WORD",
+                "Сканирование запущено",
+                QtWidgets.QSystemTrayIcon.Information,
+                100)
+        else:
+            ui.tray.showMessage(
+                "PDF2WORD",
+                "Приложение запущено",
+                QtWidgets.QSystemTrayIcon.Information,
+                100)
+    except:
+        traceback.print_exc()
     sys.exit(app.exec_())
