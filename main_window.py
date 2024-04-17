@@ -347,11 +347,7 @@ if __name__ == "__main__":
                 QtWidgets.QSystemTrayIcon.Information,
                 100)
         else:
-            ui.tray.showMessage(
-                "PDF2WORD",
-                "Приложение запущено",
-                QtWidgets.QSystemTrayIcon.Information,
-                100)
+            ui.mw.show()
     except:
         traceback.print_exc()
     sys.exit(app.exec_())
