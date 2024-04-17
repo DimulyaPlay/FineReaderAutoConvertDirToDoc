@@ -86,6 +86,12 @@ class Ui_MainWindow(object):
         tray_menu.addAction(hide_action)
         tray_menu.addAction(quit_action)
         self.tray.setContextMenu(tray_menu)
+        def tray_icon_activated(reason):
+            if reason == QtWidgets.QSystemTrayIcon.Trigger:  # Это означает нажатие левой кнопкой мыши
+                tray_menu.exec_(QtGui.QCursor.pos())  # Открывает контекстное меню в позиции курсора
+
+        # Подключение сигнала activated к методу tray_icon_activated
+        self.tray.activated.connect(tray_icon_activated)
         self.mw.setWindowFlags(QtCore.Qt.Tool)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         font = QtGui.QFont()
@@ -202,7 +208,7 @@ class Ui_MainWindow(object):
         self.plainTextEdit_logger = QtWidgets.QPlainTextEdit(self.centralwidget)
         self.plainTextEdit_logger.setGeometry(QtCore.QRect(5, 310, 320, 148))
         self.plainTextEdit_logger.setReadOnly(True)
-        self.plainTextEdit_logger.appendPlainText('Утилита для мониторинга папки и конвертации появляющихся в ней файлов через FineReader в текст, а также просто сохранения в виде изображений на страницах Word (для прикрепления сканов касс определений в базу)')
+        self.plainTextEdit_logger.appendPlainText('Утилита для мониторинга папки и конвертации появляющихся в ней файлов через FineReader в текст, а также просто сохранения в виде изображений на страницах Word.')
         self.plainTextEdit_logger.appendPlainText('Dmitry Sosnin, Krasnokamsky gs, github.com/dimulyaplay')
 
         self.statusBar = QtWidgets.QStatusBar(MainWindow)
